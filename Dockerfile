@@ -144,6 +144,11 @@ FROM debian:bookworm-slim
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y \
+    iputils-ping \
+    nano \
+    vim \
+    htop \
+    net-tools\
     libssl3 \
     libsqlite3-0 \
     libjansson4 \
