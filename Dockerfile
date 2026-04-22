@@ -214,8 +214,9 @@ COPY --from=builder /etc/asterisk /etc/asterisk
 RUN ldconfig
 
 # Store a copy of samples for the entrypoint to use if /etc/asterisk is empty
-RUN mkdir -p /var/lib/asterisk/sample-config && \
-    cp -a /etc/asterisk/. /var/lib/asterisk/sample-config/ || true
+RUN mkdir -p /var/lib/asterisk/sample-config /var/lib/asterisk/sample-sounds && \
+    cp -a /etc/asterisk/. /var/lib/asterisk/sample-config/ || true && \
+    cp -a /var/lib/asterisk/sounds/. /var/lib/asterisk/sample-sounds/ || true
 
 # Create asterisk user with specific UID/GID for consistent volume permissions
 RUN groupadd -g 1000 asterisk && \

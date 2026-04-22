@@ -12,7 +12,13 @@ SOUNDS_DIR="/var/lib/asterisk/sounds"
 # Check if the config directory is empty (common on first mount)
 if [ -z "$(ls -A $CONFIG_DIR)" ]; then
     echo "Initializing configuration directory with samples..."
-    cp -rv $SAMPLE_DIR/* $CONFIG_DIR/
+    cp -a $SAMPLE_DIR/* $CONFIG_DIR/ || true
+fi
+
+# Check if sounds directory is empty (happens when local volume is mounted)
+if [ -z "$(ls -A $SOUNDS_DIR 2>/dev/null)" ] && [ -d "/var/lib/asterisk/sample-sounds" ]; then
+    echo "Initializing sounds directory from build samples..."
+    cp -a /var/lib/asterisk/sample-sounds/* $SOUNDS_DIR/ || true
 fi
 
 # Ensure MOH directory exists and has default files
