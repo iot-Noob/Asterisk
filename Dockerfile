@@ -119,23 +119,7 @@ RUN menuselect/menuselect \
     --enable format_mp3 \
     --enable format_wav \
     --enable format_wav_gsm \
-    --enable format_sln \
     --enable format_ogg_vorbis \
-    --enable CORE-SOUNDS-EN-WAV \
-    --enable CORE-SOUNDS-EN-ULAW \
-    --enable CORE-SOUNDS-EN-ALAW \
-    --enable CORE-SOUNDS-EN-GSM \
-    --enable CORE-SOUNDS-EN-G722 \
-    --enable EXTRA-SOUNDS-EN-WAV \
-    --enable EXTRA-SOUNDS-EN-ULAW \
-    --enable EXTRA-SOUNDS-EN-ALAW \
-    --enable EXTRA-SOUNDS-EN-GSM \
-    --enable EXTRA-SOUNDS-EN-G722 \
-    --enable MOH-OPSOUND-WAV \
-    --enable MOH-OPSOUND-ULAW \
-    --enable MOH-OPSOUND-ALAW \
-    --enable MOH-OPSOUND-GSM \
-    --enable MOH-OPSOUND-G722 \
     menuselect.makeopts
 
 # Optional: Disable modules you don't need
@@ -149,18 +133,18 @@ RUN make -j$(nproc)
 # Install
 RUN make install && \
     make config && \
-    make samples && \
-    echo "Checking sound files..." && \
-    ls -la /var/lib/asterisk/sounds/en/ | head -20 && \
-    echo "Checking MOH files..." && \
-    ls -la /var/lib/asterisk/moh/ || echo "WARNING: MOH directory is empty!"
+    make samples
 
-# If MOH files are missing, create a default one
-RUN if [ ! -f /var/lib/asterisk/moh/default ]; then \
-        echo "Creating default MOH file..." && \
-        cp /var/lib/asterisk/sounds/en/hello-world.gsm /var/lib/asterisk/moh/default 2>/dev/null || \
-        echo "Warning: Could not create default MOH file"; \
-    fi
+# Manually fetch audio tarballs as a foolproof backup in case of network/menuselect misses
+RUN mkdir -p /var/lib/asterisk/sample-sounds && \
+    cd /var/lib/asterisk/sample-sounds && \
+    wget -4 -qO- https://downloads.asterisk.org/pub/telephony/sounds/asterisk-core-sounds-en-wav-current.tar.gz | tar xz || true && \
+    wget -4 -qO- https://downloads.asterisk.org/pub/telephony/sounds/asterisk-extra-sounds-en-wav-current.tar.gz | tar xz || true && \
+    wget -4 -qO- https://downloads.asterisk.org/pub/telephony/sounds/asterisk-moh-opsound-wav-current.tar.gz | tar xz || true && \
+    cp -a /var/lib/asterisk/sounds/. /var/lib/asterisk/sample-sounds/ 2>/dev/null || true
+
+# Check what we have
+RUN ls -la /var/lib/asterisk/sample-sounds | head -20
 
 # --- Final Stage ---
 FROM debian:bookworm-slim
@@ -214,9 +198,8 @@ COPY --from=builder /etc/asterisk /etc/asterisk
 RUN ldconfig
 
 # Store a copy of samples for the entrypoint to use if /etc/asterisk is empty
-RUN mkdir -p /var/lib/asterisk/sample-config /var/lib/asterisk/sample-sounds && \
-    cp -a /etc/asterisk/. /var/lib/asterisk/sample-config/ || true && \
-    cp -a /var/lib/asterisk/sounds/. /var/lib/asterisk/sample-sounds/ || true
+RUN mkdir -p /var/lib/asterisk/sample-config && \
+    cp -a /etc/asterisk/. /var/lib/asterisk/sample-config/ || true
 
 # Create asterisk user with specific UID/GID for consistent volume permissions
 RUN groupadd -g 1000 asterisk && \

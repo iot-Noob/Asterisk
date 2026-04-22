@@ -44,6 +44,7 @@ fi
 
 # Ensure correct ownership at runtime
 echo "Ensuring file permissions..."
+mkdir -p "$LOG_DIR/cdr-csv" "$LOG_DIR/cdr-custom"
 chown -R asterisk:asterisk $CONFIG_DIR $LOG_DIR $SPOOL_DIR /var/lib/asterisk /var/run/asterisk 2>/dev/null || true
 
 # Ensure shared library cache is up to date
