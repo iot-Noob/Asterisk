@@ -63,7 +63,6 @@ RUN menuselect/menuselect \
     --enable app_voicemail_odbc \
     --enable app_queue \
     --enable app_record \
-    --enable app_dial \
     --enable app_stasis \
     --enable res_ari \
     --enable res_ari_applications \
@@ -113,7 +112,6 @@ RUN menuselect/menuselect \
     --enable res_mwi_external_ami \
     --enable res_stir_shaken \
     --enable codec_opus \
-    --enable codec_silk \
     --enable codec_g722 \
     --enable codec_gsm \
     --enable codec_ulaw \
@@ -123,6 +121,21 @@ RUN menuselect/menuselect \
     --enable format_wav_gsm \
     --enable format_sln \
     --enable format_ogg_vorbis \
+    --enable CORE-SOUNDS-EN-WAV \
+    --enable CORE-SOUNDS-EN-ULAW \
+    --enable CORE-SOUNDS-EN-ALAW \
+    --enable CORE-SOUNDS-EN-GSM \
+    --enable CORE-SOUNDS-EN-G722 \
+    --enable EXTRA-SOUNDS-EN-WAV \
+    --enable EXTRA-SOUNDS-EN-ULAW \
+    --enable EXTRA-SOUNDS-EN-ALAW \
+    --enable EXTRA-SOUNDS-EN-GSM \
+    --enable EXTRA-SOUNDS-EN-G722 \
+    --enable MOH-OPSOUND-WAV \
+    --enable MOH-OPSOUND-ULAW \
+    --enable MOH-OPSOUND-ALAW \
+    --enable MOH-OPSOUND-GSM \
+    --enable MOH-OPSOUND-G722 \
     menuselect.makeopts
 
 # Optional: Disable modules you don't need
@@ -136,7 +149,18 @@ RUN make -j$(nproc)
 # Install
 RUN make install && \
     make config && \
-    make samples
+    make samples && \
+    echo "Checking sound files..." && \
+    ls -la /var/lib/asterisk/sounds/en/ | head -20 && \
+    echo "Checking MOH files..." && \
+    ls -la /var/lib/asterisk/moh/ || echo "WARNING: MOH directory is empty!"
+
+# If MOH files are missing, create a default one
+RUN if [ ! -f /var/lib/asterisk/moh/default ]; then \
+        echo "Creating default MOH file..." && \
+        cp /var/lib/asterisk/sounds/en/hello-world.gsm /var/lib/asterisk/moh/default 2>/dev/null || \
+        echo "Warning: Could not create default MOH file"; \
+    fi
 
 # --- Final Stage ---
 FROM debian:bookworm-slim
@@ -191,12 +215,12 @@ RUN ldconfig
 
 # Store a copy of samples for the entrypoint to use if /etc/asterisk is empty
 RUN mkdir -p /var/lib/asterisk/sample-config && \
-    cp -rp /etc/asterisk/* /var/lib/asterisk/sample-config/
+    cp -a /etc/asterisk/. /var/lib/asterisk/sample-config/ || true
 
 # Create asterisk user with specific UID/GID for consistent volume permissions
 RUN groupadd -g 1000 asterisk && \
     useradd -r -u 1000 -g asterisk -G audio,dialout asterisk && \
-    mkdir -p /var/run/asterisk /var/log/asterisk /var/spool/asterisk && \
+    mkdir -p /var/run/asterisk /var/log/asterisk /var/spool/asterisk /var/lib/asterisk/moh && \
     chown -R asterisk:asterisk /var/run/asterisk /var/log/asterisk /var/spool/asterisk /etc/asterisk /var/lib/asterisk
 
 # Add entrypoint script
