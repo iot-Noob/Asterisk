@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  asterisk:
+    build: .
+    image: asterisk
+    container_name: asterisk
+    restart: unless-stopped
+    
+    # Host network - avoids NAT issues with RTP
+    network_mode: host
+    
+    # Volume mounts for persistent configuration
+    volumes:
+      - ./config:/etc/asterisk:rw
+      - ./sounds:/var/lib/asterisk/sounds:rw
+      - ./logs:/var/log/asterisk:rw
+      - ./spool:/var/spool/asterisk:rw
+    
+    # Capabilities needed for real-time operations
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+      - IPC_LOCK
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+    # Resource limits and priority
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+      nproc: 65535
+      memlock: -1
+      rtprio: 99
+    

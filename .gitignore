@@ -1,0 +1,15 @@
+# Ignore everything
+*
+
+# Except project files
+!.gitignore
+!Dockerfile
+!docker-compose.yaml
+!entrypoint.sh
+!README.md
+
+# Ignore runtime/persistent data directories
+**config/**
+**sounds/**
+**logs/**
+**spool/**
